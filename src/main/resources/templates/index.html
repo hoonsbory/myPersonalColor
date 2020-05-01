@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="btnGroup">
+        <button type="button" id="refreshImg" onclick="refresh()" disabled="true">사진 복구</button>
+        <button id="cropImage" disabled="true">자르기</button>
+        <button type="button" id="leftBtn" style="display: none;" onclick="rotateImg('left')">왼쪽으로 90도 회전</button>
+        <button type="button" id="rightBtn" style="display: none;" onclick="rotateImg('right')">오른쪽으로 90도 회전</button>
+        <button id="editBtn" onclick="editImg()">사진편집</button>
+    </div>
+    <canvas id="myCanvas" style="display: none;">
+    </canvas>
+    <canvas id="copyCanvas" style="display: none;">
+    </canvas>
+    <canvas id="rotateCanvas" style="display: none;">
+    </canvas>
+    <p id="resultText"></p>
+    <script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="/static/js/Jcrop.min.js"></script>
+    <script type="text/javascript" src="/static/js/load-image.all.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+
+    <div class="file-upload">
+
+        <div class="image-upload-wrap">
+            <input class="file-upload-input" id="fileInput" type='file' onclick="removeValue()"
+                onchange="readURL(this);" accept="image/*" />
+            <div class="drag-text">
+                <h3>Drag and drop a file or select add Image</h3>
+            </div>
+        </div>
+
+        <div id="slider" style="display: none;">
+
+            <a class="control_next">다음</a>
+            <a class="control_prev"></a>
+            <ul>
+                <li>
+                    <div class="file-upload-content">
+                        <img class="file-upload-image" id="realImage" src="#" width="400px" height="400px"
+                            alt="your image" />
+                        <button type="button" onclick="$('.file-upload-input').trigger( 'click' )"
+                            class="remove-image">새로운 파일로 재시도</button>
+                        <img id="originalImg" style="display: none;" />
+                    </div>
+
+                </li>
+                <li>
+                    <div class="question">
+                        <p>1.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+
+                </li>
+                <li>
+                    <div class="question">
+                        <p>2.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="question">
+                        <p>3.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="question">
+                        <p>4.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="question">
+                        <p>5.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="question">
+                        <p>6.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+                <li>
+                    <div class="question">
+                        <p>7.당신은 어떤 옷 색깔이 잘받습니까?</p>
+                    </div>
+                    <div class="choose">
+                        <div class="leftChoose" onclick="moveRight('worm')">핑크색</div>
+                        <div class="rightChoose" onclick="moveRight('cool')">노란색</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+
+    </div>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+
+
+
+        var slideCount = $('#slider ul li').length;
+        var slideWidth = $('#slider ul li').width();
+        var slideHeight = $('#slider ul li').height();
+        var sliderUlWidth = slideCount * slideWidth;
+
+
+        $('#slider ul').css({ width: sliderUlWidth, marginLeft: - slideWidth });
+
+        $('#slider ul li:last-child').prependTo('#slider ul');
+
+
+
+        function moveLeft() {
+            slideCheck--;
+            var slideWidth = $('#slider ul li').width();
+            $('#slider ul').animate({
+
+                left: + slideWidth
+            }, 400, function () {
+                $('#slider ul li:last-child').prependTo('#slider ul');
+                $('#slider ul').css('left', '');
+            });
+
+        };
+
+        function moveRight(tone) {
+            console.log(answerStack);
+            slideCheck++;
+            if (tone == "worm") {
+                answerStack.push("worm");
+            } else if (tone == "cool") {
+                answerStack.push("cool");
+            }
+            if (slideCheck == 8) {
+                var worm = 0;
+                var cool = 0;
+                for (var i = 0; i < answerStack.length; i++) {
+                    if (answerStack[i] == "worm") {
+                        worm++;
+                    } else {
+                        cool++;
+                    }
+                }
+                console.log(worm);
+                console.log(cool);
+                if (worm < cool) {
+                    toneColor = "cool";
+                    season(coolColor);
+                    return
+                } else {
+                    toneColor = "worm";
+                    season(wormColor);
+                    return
+                }
+
+
+            }
+
+            var slideWidth = $('#slider ul li').width();
+            $('#slider ul').animate({
+                left: - slideWidth
+            }, 400, function () {
+                $('#slider ul li:first-child').appendTo('#slider ul');
+                $('#slider ul').css('left', '');
+            });
+
+        };
+
+        $('a.control_prev').click(function () {
+            moveLeft();
+        });
+
+        $('a.control_next').click(function () {
+            moveRight("aa");
+        });
+
+        //슬라이드 위치체크
+        var slideCheck = 0;
+
+        //회전율
+        var rotateRate = 0;
+        //비교 후 결과값을 담을 변수
+        var calResult = [];
+        var toneColor;
+        //맨처음 색상분석을 위한 색상리스트
+        var colorList = [
+            [255, 233, 196],
+            [254, 224, 174],
+            [253, 215, 153],
+            [244, 203, 149],
+            [238, 219, 179],
+            [238, 210, 160],
+            [232, 191, 139],
+            [223, 180, 112],
+            [254, 236, 224],
+            [255, 227, 213],
+            [255, 222, 203],
+            [250, 208, 184],
+            [248, 230, 216],
+            [249, 226, 208],
+            [246, 216, 192],
+            [236, 205, 177],
+            //여기까지 톤색깔
+        ]
+        var wormColor = [
+            [255, 233, 196],
+            [254, 224, 174],
+            [253, 215, 153],
+            [244, 203, 149],
+            [238, 219, 179],
+            [238, 210, 160],
+            [232, 191, 139],
+            [223, 180, 112]
+
+        ]
+        var coolColor = [
+            [254, 236, 224],
+            [255, 227, 213],
+            [255, 222, 203],
+            [250, 208, 184],
+            [248, 230, 216],
+            [249, 226, 208],
+            [246, 216, 192],
+            [236, 205, 177]
+        ]
+        var imgRed;
+        var imgGreen;
+        var imgBlue;
+        var answerStack = [];
+        console.log(answerStack);
+
+        //크롭을 위한 좌표값
+        var x;
+        var y;
+        var w;
+        var h;
+        let jcropApi = null;
+
+        function removeValue() {
+            $("#fileInput").val("");
+        }
+
+        $("#cropImage").click(function () {
+            document.getElementById("cropImage").disabled = true;
+            document.getElementById("refreshImg").disabled = false;
+            var imgClo = new Image();
+            imgClo.src = document.getElementById("realImage").src;
+            imgClo.addEventListener('load', function () {
+                //로드된 이미지를 캔버스에 출력
+                //복사용 캔버스에 복사함. 하나의 캔버스에서 자기 자신을 불러와 크롭해서 리드로우가 불가능하기 때문.
+                let canvas = document.getElementById("myCanvas");
+
+                let canvasContext = canvas.getContext("2d");
+
+
+
+                // @breif 캔버스 크기를 이미지 크기와 동일하게 지정
+
+                var imgWidth = document.getElementById("copyCanvas").width;
+                var imgHeight = document.getElementById("copyCanvas").height;
+                var xRate = imgWidth / 400;
+                var yRate = imgHeight / 400;
+                canvas.width = w * xRate;
+
+                canvas.height = h * yRate;
+                if (canvas.width == 0 || canvas.height == 0) {
+                    alert("더 이상 확대할 수 없습니다.")
+                    document.getElementById("cropImage").disabled = false;
+                    return;
+                }
+                canvasContext.drawImage(
+
+                    document.getElementById("copyCanvas")
+
+                    , x * xRate        // 자르기를 시작할 x좌표
+
+                    , y * yRate       // 자르기를 시작할 y좌표
+
+                    , w * xRate   // 잘라낸 이미지의 넓이
+
+                    , h * yRate    // 잘라낸 이미지의 높이
+
+                    , 0                                         // 캔버스에 이미지를 배치할 x좌표
+
+                    , 0                                         // 캔버스에 이미지를 배치할 y좌표
+
+                    , w * xRate  // 사용할 이미지의 넓이(이미지 스트레칭 또는 축소)
+
+                    , h * yRate  // 사용할 이미지의 높이(이미지 스트레칭 또는 축소)
+
+                );
+
+
+                // 로드된 이미지를 캔버스에 출력
+                let canvas2 = document.getElementById("copyCanvas");
+
+                let canvasContext2 = canvas2.getContext("2d");
+
+
+
+                // @breif 캔버스 크기를 이미지 크기와 동일하게 지정
+
+                canvas2.width = document.getElementById("myCanvas").width;
+
+                canvas2.height = document.getElementById("myCanvas").height;
+
+                canvasContext2.drawImage(
+
+                    document.getElementById("myCanvas"), 0, 0
+
+
+                );
+
+
+
+                if (jcropApi) {
+                    jcropApi.destroy();
+                    jcropApi = null;
+                }
+                // let canvas2 = document.getElementById("copyCanvas");
+
+                // let canvasContext2 = canvas2.getContext("2d");
+                // var image = new Image();
+                // image.src = document.getElementById("realImage").src;
+                // image.onload = function () {
+
+                //     canvasContext2.drawImage(image, 0, 0, 200, 200);
+                // }
+                $(".file-upload-image").attr("src", getBase64Image());
+                document.getElementById("realImage").style.transform = "none";
+                rotateRate = 0;
+                $("#realImage").Jcrop({
+                    onSelect: showCoords,
+                }, function () {
+                    jcropApi = this;
+                });
+
+
+
+                // @details JCROP을 종료한다.
+
+
+
+            });
+
+            //이미지 경로 설정
+        })
+
+
+        // function readURL(input) {
+        //     if (input.files && input.files[0]) {
+
+        //         if (jcropApi) {
+        //             jcropApi.destroy();
+
+        //             jcropApi = null;
+        //         }
+        //         var files = input.files;
+        //         var fileType = files[0].type;
+        //         loadImage(files[0], function (img, data) {
+        //             img.toBlob(function (blob) {
+        //                 var rotateFile = new File([blob], files[0].name, {
+        //                     type: fileType
+        //                 });
+        //                 sel_file = rotateFile;
+        //                 var reader = new FileReader();
+        //                 reader.onload = function (e) {
+        //                     $('.image-upload-wrap').hide();
+        //                     $('.file-upload-image').removeAttr("style");
+        //                     $('.file-upload-image').attr('src', e.target.result);
+        //                     $('.file-upload-image').css("display", "none");
+        //                     $('#realImage').attr('src', document.getElementById("ToneImage").getAttribute("src"));
+        //                     $('.file-upload-content').show();
+
+        //                     $('.image-title').html(input.files[0].name);
+        //                     $("#realImage").Jcrop({
+        //                         onSelect: showCoords
+        //                     }, function () {
+        //                         jcropApi = this;
+        //                     });
+        //                 }
+        //                 reader.readAsDataURL(rotateFile);
+        //             }, fileType)
+        //         }, {
+        //             orientation: true
+        //         });//end loadImage
+
+
+
+        //     } else {
+        //         removeUpload();
+        //     }
+        // }  블롭을 통해 자동으로 로테이트하는 함수, 그러나 지원하지 않는 브라우저가 많아서 포기.
+
+
+        function editImg() {
+            document.getElementById("leftBtn").style.display = "inline";
+            document.getElementById("rightBtn").style.display = "inline";
+            document.getElementById("editBtn").disabled = true
+            let canvas = document.getElementById("copyCanvas");
+
+            let canvasContext = canvas.getContext("2d");
+
+            // @breif 캔버스의 이미지
+
+            var image = new Image();
+            image.src = document.getElementById("originalImg").src;
+            image.onload = function () {
+
+                canvas.width = this.width;
+
+                canvas.height = this.height;
+
+
+
+                //안드로이드인 내 폰에서는 방향에 맞게 자동으로 회전되어 등록되지만 애플은 그렇지 않다. 애플은 정방향에서 90도회전된 정보가 사진에 들어가 있다.
+                //예를 들면 정방향에서 찍었으면 회전값이 1이어야 하는데 애플은 8이 나온다. 그래서 애플 디바이스를 위한 회전 로직을 따로 짜야했다.
+                if (navigator.userAgent.match(/iPhone|iPad|iPod|Mac/i) == null ? false : true) {
+                    console.log("애플기기입니다.");
+                    var fileInfo = document.getElementById("fileInput").files[0];
+                    EXIF.getData(fileInfo, async () => {
+                        const orientation = EXIF.getTag(fileInfo, "Orientation");
+                        console.log("회전도는 " + orientation);
+                        switch (orientation) {
+
+                            // @details 이미지 회전값이 0인경우 ( 정방향 )
+
+                            case 1:
+
+
+                                canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                                break;
+
+                            case 3:
+
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+
+
+
+                                // @details 이미지가 180° 회전 했을 경우 x, y축의 값을 업로드 이미지의 넓이와 높이를 음수로 변경한다.
+
+                                canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+                                break;
+
+                            // @details 이미지 회전값이 270 기운 경우 ( 왼쪽으로 90 기운 경우 )
+                            case 6:
+                                if (canvas.width < canvas.height) {
+                                    canvas.width = canvas.height;
+                                } else {
+                                    canvas.height = canvas.width;
+                                }
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI * 0.5);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+                                canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+
+
+                                // @details 이미지가 270° 회전 했을 경우 x축의 값을 업로드 이미지의 넓이를 음수로 변경한다.
+
+
+                                break;
+
+                            // @details 이미지 회전값이 90 기운 경우
+                            case 8:
+                                if (canvas.width < canvas.height) {
+                                    canvas.width = canvas.height;
+                                } else {
+                                    canvas.height = canvas.width;
+                                }
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI * 1.5);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+                                canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+                                //회전하기전에 정사각형을 만들어주자.
+                                break;
+                        }
+
+                        $("#realImage").Jcrop({
+                            onSelect: showCoords,
+                        }, function () {
+                            jcropApi = this;
+                        });
+
+                        // $('.file-upload-image').css("display", "none");
+                        // $('#realImage').attr('src', e.target.result);
+                        $('.file-upload-content').show();
+                    })
+                } else {
+                    canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+
+                    $("#realImage").Jcrop({
+                        onSelect: showCoords,
+                    }, function () {
+                        jcropApi = this;
+                    });
+
+                    // $('.file-upload-image').css("display", "none");
+                    // $('#realImage').attr('src', e.target.result);
+                    $('.file-upload-content').show();
+                }
+            }
+
+        }
+
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById("leftBtn").style.display = "none";
+                document.getElementById("rightBtn").style.display = "none";
+                document.getElementById("editBtn").disabled = false;
+                document.getElementById("cropImage").disabled = true;
+                document.getElementById("refreshImg").disabled = true;
+                if (jcropApi) {
+                    jcropApi.destroy();
+
+                    jcropApi = null;
+                }
+                const fileInfo = input.files[0];
+                var reader = new FileReader();
+                let tempImage = new Image();
+                reader.onload = function (e) {
+                    tempImage.src = e.target.result;
+                    tempImage.onload = async function () {
+
+                        // @breif 캔버스 위에 이미지 그리기
+
+                        $('.image-upload-wrap').hide();
+                        $('.file-upload-image').removeAttr("style");
+                        $('#originalImg').attr('src', tempImage.src);
+                        $('.file-upload-image').attr('src', tempImage.src);
+
+
+                        // $('.file-upload-image').css("display", "none");
+                        // $('#realImage').attr('src', e.target.result);
+                        $('#slider').show();
+
+                    };
+
+
+                    //회전값이 있는 사진을 정방향으로 돌리는 로직을 짜려했지만, 디바이스마다 회전값을 처리하는 기준이 달라서(특히 애플) 결국 포기하고 
+                    //있는 그대로의 사진을 올리고 유저가 회전시킬 수 있게 바꾸었다...
+
+
+                    // canvasContext.drawImage(tempImage, 0, 0, canvas.width, canvas.height);
+
+                    //     await EXIF.getData(fileInfo, async () => {
+                    //         // if (navigator.userAgent.indexOf('Mobile') != -1) {
+                    //         //     canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    //         //     // console.log("모바일기기입니다.")
+                    //         //     return
+                    //         // }
+                    //         fileInfo.exifdata = null;
+                    //         console.log(EXIF.getAllTags(fileInfo));
+                    //         const orientation = EXIF.getTag(fileInfo, "Orientation");
+                    //         console.log("회전도는 "+orientation);
+
+                    //         switch (orientation) {
+
+                    //             // @details 이미지 회전값이 0인경우 ( 정방향 )
+                    //             case undefined:
+
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    //                 $('.image-upload-wrap').hide();
+                    // $('.file-upload-image').removeAttr("style");
+                    // $('.file-upload-image').attr('src', getBase64Image());
+
+                    //  $('#originalImg').attr('src', getBase64Image());
+                    //   $("#realImage").Jcrop({
+                    //     onSelect: showCoords,
+                    // }, function () {
+                    //     jcropApi = this;
+                    // });
+
+                    // // $('.file-upload-image').css("display", "none");
+                    // // $('#realImage').attr('src', e.target.result);
+                    // $('.file-upload-content').show();
+                    // $('.image-title').html(input.files[0].name);
+                    //             //    callback(canvas);
+
+                    //                 break;
+                    //             case 1:
+
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    //                 break;
+                    //             case 0:
+
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    //                 break;
+                    //             // @details 이미지 회전값이 180 기운 경우
+                    //             case 3:
+                    //                 // document.getElementById("realImage").style.transform = "rotate( 180deg )";
+                    //                 // document.getElementById("originalImg").style.transform = "rotate( 180deg )";
+                    //                 // document.getElementsByClassName("file-upload-image")[1].style.transform = "rotate( 180deg )";
+                    //                 // document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.style.transform = "rotate(180deg)";
+
+
+
+
+
+                    //                 // canvasContext.rotate((180) * Math.PI / 180);
+
+                    //                 canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                    //                 canvasContext.rotate(Math.PI);
+                    //                 canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+
+
+
+
+                    //                 // @details 이미지가 180° 회전 했을 경우 x, y축의 값을 업로드 이미지의 넓이와 높이를 음수로 변경한다.
+
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+                    //                 break;
+
+                    //             // @details 이미지 회전값이 270 기운 경우 ( 왼쪽으로 90 기운 경우 )
+                    //             case 6:
+                    //                 if (canvas.width < canvas.height) {
+                    //                     canvas.width = canvas.height;
+                    //                 } else {
+                    //                     canvas.height = canvas.width;
+                    //                 }
+                    //                 // document.getElementById("realImage").style.transform = "rotate( 90deg )";
+                    //                 // document.getElementById("originalImg").style.transform = "rotate( 90deg )";
+                    //                 // document.getElementsByClassName("file-upload-image")[1].style.transform = "rotate( 90deg )";
+                    //                 // document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.style.transform = "rotate(90deg)";
+                    //                 // @details 270° 회전의 경우 이미지의 높이와 넓이를 서로 바꿔준다.
+
+
+                    //                 // tempImage.src = document.getElementById("ToneImage").getAttribute("src");
+                    //                 // canvasContext.save();
+                    //                 // canvasContext.translate(tempImage.width / 2, tempImage.height / 2);
+                    //                 // canvasContext.rotate(Math.PI * 0.5);
+
+                    //                 // canvasContext.drawImage(this, -1490,-0);
+
+                    //                 // canvasContext.restore();
+                    //                 console.log("ㅅㅂ");
+                    //                 canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                    //                 canvasContext.rotate(Math.PI * 0.5);
+                    //                 canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+
+
+
+                    //                 // @details 이미지가 270° 회전 했을 경우 x축의 값을 업로드 이미지의 넓이를 음수로 변경한다.
+
+
+                    //                 break;
+
+                    //             // @details 이미지 회전값이 90 기운 경우
+                    //             case 8:
+                    //                 //회전하기전에 정사각형을 만들어주자.
+                    //                 if (canvas.width < canvas.height) {
+                    //                     canvas.width = canvas.height;
+                    //                 } else {
+                    //                     canvas.height = canvas.width;
+                    //                 }
+                    //                 // document.getElementById("realImage").style.transform = "rotate( 270deg )";
+                    //                 // document.getElementById("originalImg").style.transform = "rotate( 270deg )";
+                    //                 // document.getElementsByClassName("file-upload-image")[1].style.transform = "rotate( 270deg )";
+                    //                 // document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.style.transform = "rotate(270deg)";
+                    //                 // @details 90° 회전의 경우 이미지의 높이와 넓이를 서로 바꿔준다.
+
+
+
+
+                    //                 // canvasContext.rotate((90) * Math.PI / 180);
+
+                    //                 //캔버스의 중심점 설정.
+                    //                 canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                    //                 canvasContext.rotate(Math.PI * 1.5);
+                    //                 //회전시킨 후 다시 중심점 0,0으로 설정.
+                    //                 canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+
+
+                    //                 // @details 이미지가 90° 회전 했을 경우 y축의 값을 업로드 이미지의 높이를 음수로 변경한다.
+                    //                 canvasContext.drawImage(this, 0, 0, canvas.width, canvas.height);
+                    //                 break;
+                    //         }
+                    //     });
+                    // let dataURI = canvas.toDataURL("image/jpeg");
+
+                    // document.querySelector("#ToneImage").src = dataURI;
+
+
+
+                }
+
+                reader.readAsDataURL(fileInfo);
+
+
+            } else {
+                removeUpload();
+            }
+        }
+
+
+        function rotateImg(plusMinus) {
+            if (plusMinus == "right") {
+                rotateRate += 90;
+            } else {
+                rotateRate -= 90;
+            }
+
+            if (rotateRate == 360 || rotateRate == -360) {
+                rotateRate = 0;
+            }
+
+            let canvas = document.getElementById("copyCanvas");
+
+            let canvasContext = canvas.getContext("2d");
+
+            let rotateCanvas = document.getElementById("rotateCanvas");
+            let rtx = rotateCanvas.getContext("2d");
+            console.log(rotateRate);
+            document.getElementById("realImage").style.transform = "rotate( " + rotateRate + "deg )";
+            document.getElementById("originalImg").style.transform = "rotate( " + rotateRate + "deg )";
+            document.getElementsByClassName("file-upload-image")[1].style.transform = "rotate( " + rotateRate + "deg )";
+            document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.style.transform = "rotate( " + rotateRate + "deg )";
+
+            rotateCanvas.width = canvas.width;
+            rotateCanvas.height = canvas.height;
+
+            if (rotateCanvas.width < rotateCanvas.height) {
+                rotateCanvas.width = rotateCanvas.height;
+            } else {
+                rotateCanvas.height = rotateCanvas.width;
+            }
+
+            // 캔버스의 중심점 설정.
+            rtx.translate(rotateCanvas.width / 2, rotateCanvas.height / 2);
+            if (plusMinus == "right") {
+                rtx.rotate(Math.PI * 0.5);
+            } else {
+                rtx.rotate(Math.PI * -0.5);
+
+            }
+            rtx.translate(-rotateCanvas.width / 2, -rotateCanvas.height / 2);
+            rtx.drawImage(canvas, 0, 0, rotateCanvas.width, rotateCanvas.height);
+
+
+
+            //회전용 캔버스의 내용을 다시 메인 캔버스에 복사해준다. 이미지를 회전시켜 캔버스에 그리면 편하나, 원래 이미지를 회전시킨건 단순 css를 통한 회전이다
+            //캔버스에는 회전이 적용되지않은 원래의 이미지가 그려지기 때문에 메인캔버스의 그림을 불러와 서브캔버스에 회전한 상태를 그린 후, 다시 서브에서 메인으로 옮겨 그린다.
+            canvas.width = rotateCanvas.width;
+            canvas.height = rotateCanvas.height;
+
+            canvasContext.drawImage(rotateCanvas, 0, 0, rotateCanvas.width, rotateCanvas.height);
+
+        }
+
+        function removeUpload() {
+            $('.file-upload-input').replaceWith($('.file-upload-input').clone());
+            $('.file-upload-content').hide();
+            $('.image-upload-wrap').show();
+        }
+        $('.image-upload-wrap').bind('dragover', function () {
+            $('.image-upload-wrap').addClass('image-dropping');
+        });
+        $('.image-upload-wrap').bind('dragleave', function () {
+            $('.image-upload-wrap').removeClass('image-dropping');
+        });
+
+
+        var showCoords = function (c) {
+            document.getElementById("cropImage").disabled = false;
+            x = c.x;
+            y = c.y;
+            w = c.w;
+            h = c.h;
+        };
+
+        //캔버스의 이미지를 base64로 변환
+        function getBase64Image() {
+
+            var canvas = document.getElementById("copyCanvas");
+
+            var dataURL = canvas.toDataURL("image/png");
+
+            return dataURL; // dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+
+        }
+
+        function refresh() {
+            document.getElementById("cropImage").disabled = true;
+            document.getElementById("refreshImg").disabled = true;
+            document.getElementById("originalImg").style.transform = "none";
+            var image = new Image();
+            image.src = document.getElementById("originalImg").src;
+            document.getElementsByClassName("file-upload-image")[1].src = image.src;
+            document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.src = image.src;
+            document.getElementsByClassName("file-upload-image")[1].style.transform = "none";
+            document.getElementsByClassName("jcrop-holder")[0].firstElementChild.firstElementChild.firstElementChild.style.transform = "none";
+
+            var canvas = document.getElementById("copyCanvas");
+            var canvasContext = canvas.getContext("2d");
+
+
+
+            // canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            image.onload = function () {
+                canvas.width = this.width;
+                canvas.height = this.height;
+                if (navigator.userAgent.match(/iPhone|iPad|iPod|Mac/i) == null ? false : true) {
+                    console.log("애플기기입니다.");
+                    var fileInfo = document.getElementById("fileInput").files[0];
+                    EXIF.getData(fileInfo, async () => {
+                        const orientation = EXIF.getTag(fileInfo, "Orientation");
+                        console.log("회전도는 " + orientation);
+                        switch (orientation) {
+
+                            // @details 이미지 회전값이 0인경우 ( 정방향 )
+
+                            case 1:
+
+
+                                canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+                                break;
+
+                            case 3:
+
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+
+
+
+                                // @details 이미지가 180° 회전 했을 경우 x, y축의 값을 업로드 이미지의 넓이와 높이를 음수로 변경한다.
+
+                                canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                                break;
+
+                            // @details 이미지 회전값이 270 기운 경우 ( 왼쪽으로 90 기운 경우 )
+                            case 6:
+                                if (canvas.width < canvas.height) {
+                                    canvas.width = canvas.height;
+                                } else {
+                                    canvas.height = canvas.width;
+                                }
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI * 0.5);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+                                canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+
+
+                                // @details 이미지가 270° 회전 했을 경우 x축의 값을 업로드 이미지의 넓이를 음수로 변경한다.
+
+
+                                break;
+
+                            // @details 이미지 회전값이 90 기운 경우
+                            case 8:
+                                if (canvas.width < canvas.height) {
+                                    canvas.width = canvas.height;
+                                } else {
+                                    canvas.height = canvas.width;
+                                }
+
+                                canvasContext.translate(canvas.width / 2, canvas.height / 2);
+                                canvasContext.rotate(Math.PI * 1.5);
+                                canvasContext.translate(-canvas.width / 2, -canvas.height / 2);
+                                canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                                //회전하기전에 정사각형을 만들어주자.
+                                break;
+                        }
+
+
+                    })
+                } else {
+                    canvasContext.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+
+
+                }
+            }
+
+        }
+        // run the webcam image through the image model
+        function apiTest(colorGroup) {
+            $.ajax({
+                url: "/apiTest",
+                type: "post",
+                data: document.getElementById("realImage").src,
+                contentType: 'application/json;charset=UTF-8',
+                success: function (data) {
+                    imgRed = data.red;
+                    imgGreen = data.green;
+                    imgBlue = data.blue;
+
+                }, error: function () {
+                    alert("실패")
+                }
+            })
+
+        }
+        function season(colorGroup) {
+            for (var i = 0; i < 8; i++) {
+                var color = "color" + i;
+                var red = (imgRed - colorGroup[i][0]);
+                red = red < 0 ? -(red) : red;
+                var green = (imgGreen - colorGroup[i][1]);
+                green = green < 0 ? -(green) : green;
+                var blue = (imgBlue - colorGroup[i][2]);
+                blue = blue < 0 ? -(blue) : blue;
+
+                calResult.push([red + green + blue, i]);
+
+            }
+            calResult.sort(function (a, b) { // 오름차순 
+                return a[0] - b[0];
+            });
+            console.log(calResult);
+            var colorNum = calResult[0][1];
+            console.log(colorNum);
+            if (0 <= colorNum && colorNum <= 3 && toneColor == "worm") {
+                document.getElementById("resultText").innerText = "봄 웜톤입니다!"
+            } else if (toneColor == "worm") {
+                document.getElementById("resultText").innerText = "가을 웜톤입니다!"
+            } else if (0 <= colorNum && colorNum <= 3 && toneColor == "cool") {
+                document.getElementById("resultText").innerText = "여름 쿨톤입니다!"
+            } else {
+                document.getElementById("resultText").innerText = "겨울 쿨톤입니다!"
+            }
+
+            calResult = [];
+        }
+
+
+
+    </script>
+    <script>
+
+        /**
+        *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+        *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+        /*
+        var disqus_config = function () {
+        this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+        };
+        */
+        (function () { // DON'T EDIT BELOW THIS LINE
+            var d = document, s = d.createElement('script');
+            s.src = 'https://personalcolor.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by
+            Disqus.</a></noscript>
+</body>
+
+</html>
