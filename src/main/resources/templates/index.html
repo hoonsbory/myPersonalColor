@@ -8,7 +8,7 @@
 <body>
     <div class="btnGroup">
         <button type="button" id="refreshImg" onclick="refresh()" disabled="true">사진 복구</button>
-        <button id="cropImage" disabled="true">자르기</button>
+        <button id="cropImage" onclick="crop()" disabled="true">자르기</button>
         <button type="button" id="leftBtn" style="display: none;" onclick="rotateImg('left')">왼쪽으로 90도 회전</button>
         <button type="button" id="rightBtn" style="display: none;" onclick="rotateImg('right')">오른쪽으로 90도 회전</button>
         <button id="editBtn" onclick="editImg()">사진편집</button>
@@ -47,6 +47,8 @@
                             alt="your image" />
                         <button type="button" onclick="$('.file-upload-input').trigger( 'click' )"
                             class="remove-image">새로운 파일로 재시도</button>
+                            <button onclick="next()">다음>></button>
+                            <div id="failColor" style="display : none; height: 25px; width: 25px; border-radius: 15px;"> </div><span style="display: none;">사진의 상당부분이 피부색이 아닙니다. 다시 업로드하세요 </span>
                         <img id="originalImg" style="display: none;" />
                     </div>
 
@@ -201,11 +203,14 @@
             moveRight("aa");
         });
 
+        var uploadCheck = false;
         //슬라이드 위치체크
         var slideCheck = 0;
 
         //회전율
         var rotateRate = 0;
+        //첫 비교 결과값을 담을 변수
+        var firstResult = [];
         //비교 후 결과값을 담을 변수
         var calResult = [];
         var toneColor;
@@ -228,6 +233,13 @@
             [246, 216, 192],
             [236, 205, 177],
             //여기까지 톤색깔
+            [220,0,18],//빨강
+            [0,152,68],//초록
+            [0,159,232],//하늘색
+            [29,32,135],//파랑
+            [126,48,141],//보라
+            [255,255,255],//하양
+            [0,0,0]//검정
         ]
         var wormColor = [
             [255, 233, 196],
@@ -263,11 +275,21 @@
         var h;
         let jcropApi = null;
 
+
+        function next(){
+            if(uploadCheck){
+                moveRight("");
+            }else{
+                apiTest();
+            }
+
+        }
         function removeValue() {
             $("#fileInput").val("");
         }
 
-        $("#cropImage").click(function () {
+        function crop() {
+            uploadCheck = false;
             document.getElementById("cropImage").disabled = true;
             document.getElementById("refreshImg").disabled = false;
             var imgClo = new Image();
@@ -370,8 +392,8 @@
 
             });
 
+        };
             //이미지 경로 설정
-        })
 
 
         // function readURL(input) {
@@ -568,6 +590,7 @@
                         // $('.file-upload-image').css("display", "none");
                         // $('#realImage').attr('src', e.target.result);
                         $('#slider').show();
+                        uploadCheck = false;
 
                     };
 
@@ -817,6 +840,7 @@
         }
 
         function refresh() {
+            uploadCheck = false;
             document.getElementById("cropImage").disabled = true;
             document.getElementById("refreshImg").disabled = true;
             document.getElementById("originalImg").style.transform = "none";
@@ -917,7 +941,7 @@
 
         }
         // run the webcam image through the image model
-        function apiTest(colorGroup) {
+        function apiTest() {
             $.ajax({
                 url: "/apiTest",
                 type: "post",
@@ -927,6 +951,50 @@
                     imgRed = data.red;
                     imgGreen = data.green;
                     imgBlue = data.blue;
+                    for(var i =0; i<23;i++){
+                        var color = "color" + i;
+                var red = (imgRed - colorList[i][0]);
+                red = red < 0 ? -(red) : red;
+                var green = (imgGreen - colorList[i][1]);
+                green = green < 0 ? -(green) : green;
+                var blue = (imgBlue - colorList[i][2]);
+                blue = blue < 0 ? -(blue) : blue;
+
+                firstResult.push([red + green + blue, i]);
+                    }
+                    firstResult.sort(function (a, b) { // 오름차순 
+                return a[0] - b[0];
+            });
+            console.log(red)
+            console.log(green)
+            console.log(blue);
+            var colorNum = firstResult[0][1];
+            var colorThumbnail = "rgb("+red+","+green+","+blue+")"
+            document.getElementById("failColor").style.backgroundColor = colorThumbnail;
+            document.getElementById("failColor").style.display = "inline-block";
+            document.getElementById("failColor").nextElementSibling.style.display = "inline-block"
+            console.log(colorNum);
+                if(colorNum<16){
+                    moveRight("");
+                    uploadCheck = true;
+                    firstResult = [];
+                    return;
+                }else if(colorNum==16){
+                    alert("사진이 너무 빨갛습니다.")
+                }else if(colorNum==17){
+                    alert("사진이 너무 초록색입니다.")
+                }else if(colorNum==18){
+                    alert("사진이 너무 하늘색입니다.")
+                }else if(colorNum==19){
+                    alert("사진이 너무 파란색입니다.")
+                }else if(colorNum==20){
+                    alert("사진이 너무 보라색입니다.")
+                }else if(colorNum==21){
+                    alert("사진이 너무 하얀색입니다.")
+                }else{
+                    alert("사진이 너무 검정색입니다.")
+                }
+                firstResult = [];
 
                 }, error: function () {
                     alert("실패")
