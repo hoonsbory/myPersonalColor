@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
-import javax.xml.bind.DatatypeConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Base64;
 
 @Controller
 @CrossOrigin("*")
@@ -39,9 +39,9 @@ public class test {
     public Map<String,Float>  getMethodName(@RequestBody String num) throws Exception {
         String data1 = num.split(",")[1];
 
-		byte[] imageBytes = DatatypeConverter.parseBase64Binary(data1);
-
-		try {
+		// byte[] imageBytes = DatatypeConverter.parseBase64Binary(data1);
+        byte[] imageBytes = Base64.getDecoder().decode(data1);
+ 		try {
 
 			BufferedImage bufImg = ImageIO.read(new ByteArrayInputStream(imageBytes));
 
