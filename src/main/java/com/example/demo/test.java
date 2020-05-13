@@ -29,10 +29,7 @@ public class test {
     private Vision vision;
 
 
-    @GetMapping("/")
-    public String home(){
-        return "index";
-    }
+   
 
     @PostMapping(value="/apiTest")
     @ResponseBody
